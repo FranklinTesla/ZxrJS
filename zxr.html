@@ -7,9 +7,12 @@
 <body>
 <div id="app" class="{{message}}">
     {{ message }}
-    <p>
+    <div>
         {{nimabi}}
-    </p>
+        <div>{{hehe}}</div>
+        <div>{{hehe}}</div>
+        <div>{{hehe}}</div>
+    </div>
 </div>
 <script src="./dist/vue.js"></script>
 <script>
@@ -17,7 +20,8 @@
         el: '#app',
         data: {
             message: 'Hello Vue.js!',
-            nimabi: 'nimabi'
+            nimabi: 'nimabi',
+            hehe: 'hehe'
         }
     })
 </script>
