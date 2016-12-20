@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+<div id="app" class="{{message}}">
+    {{ message }}
+    <p>
+        {{nimabi}}
+    </p>
+</div>
+<script src="./dist/vue.js"></script>
+<script>
+    new Vue({
+        el: '#app',
+        data: {
+            message: 'Hello Vue.js!',
+            nimabi: 'nimabi'
+        }
+    })
+</script>
+</body>
+</html>
