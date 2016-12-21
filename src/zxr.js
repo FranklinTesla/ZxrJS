@@ -5,10 +5,10 @@
  */
 function Zxr(options) {
     if (options == null) throw new Error('an object param named must be pass in!');
-    var el = options.el;
+    let el = options.el;
     el = document.querySelector(el);
     this.$data = options.data;
     // 编译模板
     this.__walker(el);
 }
-module.exports = Zxr;
+export {Zxr};
