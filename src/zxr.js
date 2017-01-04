@@ -9,9 +9,9 @@ function Zxr(options) {
     el = document.querySelector(el);
     this.$data = options.data;
     this._watchers = [];
-    // 编译模板
-    this.__walker(el);
     // 添加响应
     this.__defineReactive();
+    // 编译模板
+    this.__walker(el);
 }
 export {Zxr};

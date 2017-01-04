@@ -5,13 +5,15 @@
     <title>Title</title>
 </head>
 <body>
-<div id="app" class="{{message}}">
+<div id="app" class="{{hehe}}sdfsdgdfg">
     {{ message }}
+    {{ hehe }}
+    {{ hehe }}
+    {{ hehe }}
+    {{ hehe }}
     {{ message }}
-    {{ message }}
-    <div>
-        {{nimabi}}
-        <div>{{hehe}}</div>
+    <div class="cao">
+        {{message}}
     </div>
 </div>
 <script src="./dist/vue.js"></script>
@@ -20,12 +22,10 @@
         el: '#app',
         data: {
             message: 'Hello Vue.js!',
-            nimabi: 'nimabi',
             hehe: 'hehe'
         }
     });
-    console.log(app._watchers);
-    app.$data.hehe = 'rinima'
+//    app.$data.message = 'rinima';
 </script>
 </body>
 </html>

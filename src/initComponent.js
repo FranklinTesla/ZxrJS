@@ -1,23 +1,30 @@
 import {Watcher} from './watcher';
+import {Dep} from './dep';
 export function initComponent(Zxr) {
+    function trimToken(str) {
+        return str.replace(/\s*\{\s*\{\s*/g, '')
+            .replace(/\s*}\s*}\s*/g, '');
+    };
     /**
      * 插值处理函数
      * 将字符串中的{{xx}}替换为实际的值
      */
     Zxr.prototype.__insertVal = function(txt, elem) {
         let rule = /\{\{\s*(\w+)\s*}}/g,
-            matchResult = rule.exec(txt),
-            data = this.$data,
-            watchers = this._watchers;
+            matchResult = txt.match(rule),
+            data = this.$data;
         if (!matchResult) return txt;
-        let keys = matchResult.slice(1);
+        let keys = [];
+        matchResult.forEach(function(item) {
+            keys.push(trimToken(item));
+        });
         for (let i = 0,len = keys.length;i < len;i++) {
-            let key = keys[i];
+            let key = keys[i],
+                rule = new RegExp('\\{\\{\\s*('+key+'+)\\s*}}');
             let result = key in data? data[key]: '';
             txt = txt.replace(rule, result);
             // 对所有插值语句创建watcher
-            let watcher = new Watcher(this.$data[key], elem, keys[i]);
-            watchers.push(watcher);
+            // let watcher = new Watcher(this, elem, key);
         }
         return txt;
     };
@@ -53,20 +60,21 @@ export function initComponent(Zxr) {
      * 为data对象添加响应
      */
     Zxr.prototype.__defineReactive = function() {
-        let data = this.$data,
-            watchers = this._watchers;
-        // 发布一个更新视图通知
-        let notify = (key, newVal) => {
-            for (let i = 0, len = watchers.length;i < len;i++) {
-                let watcher = watchers[i];
-                if (key === watcher.key) watcher.update(newVal);
-            }
-        };
-        for (let i in data) {
-            Object.defineProperty(data, i ,{
-                set: newVal => {
-                    notify(i, newVal);
-                    return newVal;
+        let data = this.$data;
+        let keys = Object.keys(data);
+        for (let i = 0,len = keys.length;i < len;i++) {
+            let key = keys[i],
+                dep = new Dep(),
+                val = data[key];
+            Object.defineProperty(data, key ,{
+                get: function() {
+                    if (Dep.target) {
+                        dep.depend();
+                    }
+                    return val;
+                },
+                set: function(newVal) {
+                    dep.notify(newVal);
                 }
             })
         }

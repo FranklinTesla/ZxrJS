@@ -84,10 +84,10 @@ return /******/ (function(modules) { // webpackBootstrap
 	    el = document.querySelector(el);
 	    this.$data = options.data;
 	    this._watchers = [];
-	    // 编译模板
-	    this.__walker(el);
 	    // 添加响应
 	    this.__defineReactive();
+	    // 编译模板
+	    this.__walker(el);
 	}
 	exports.Zxr = Zxr;
 
@@ -104,25 +104,32 @@ return /******/ (function(modules) { // webpackBootstrap
 	
 	var _watcher = __webpack_require__(3);
 	
+	var _dep = __webpack_require__(4);
+	
 	function initComponent(Zxr) {
+	    function trimToken(str) {
+	        return str.replace(/\s*\{\s*\{\s*/g, '').replace(/\s*}\s*}\s*/g, '');
+	    };
 	    /**
 	     * 插值处理函数
 	     * 将字符串中的{{xx}}替换为实际的值
 	     */
 	    Zxr.prototype.__insertVal = function (txt, elem) {
 	        var rule = /\{\{\s*(\w+)\s*}}/g,
-	            matchResult = rule.exec(txt),
-	            data = this.$data,
-	            watchers = this._watchers;
+	            matchResult = txt.match(rule),
+	            data = this.$data;
 	        if (!matchResult) return txt;
-	        var keys = matchResult.slice(1);
+	        var keys = [];
+	        matchResult.forEach(function (item) {
+	            keys.push(trimToken(item));
+	        });
 	        for (var i = 0, len = keys.length; i < len; i++) {
-	            var key = keys[i];
+	            var key = keys[i],
+	                _rule = new RegExp('\\{\\{\\s*(' + key + '+)\\s*}}');
 	            var result = key in data ? data[key] : '';
-	            txt = txt.replace(rule, result);
+	            txt = txt.replace(_rule, result);
 	            // 对所有插值语句创建watcher
-	            var watcher = new _watcher.Watcher(this.$data[key], elem, keys[i]);
-	            watchers.push(watcher);
+	            // let watcher = new Watcher(this, elem, key);
 	        }
 	        return txt;
 	    };
@@ -160,27 +167,28 @@ return /******/ (function(modules) { // webpackBootstrap
 	     * 为data对象添加响应
 	     */
 	    Zxr.prototype.__defineReactive = function () {
-	        var data = this.$data,
-	            watchers = this._watchers;
-	        // 发布一个更新视图通知
-	        var notify = function notify(key, newVal) {
-	            for (var i = 0, len = watchers.length; i < len; i++) {
-	                var watcher = watchers[i];
-	                if (key === watcher.key) watcher.update(newVal);
-	            }
-	        };
+	        var data = this.$data;
+	        var keys = Object.keys(data);
 	
-	        var _loop = function _loop(i) {
-	            Object.defineProperty(data, i, {
+	        var _loop = function _loop(i, len) {
+	            var key = keys[i],
+	                dep = new _dep.Dep(),
+	                val = data[key];
+	            Object.defineProperty(data, key, {
+	                get: function get() {
+	                    if (_dep.Dep.target) {
+	                        dep.depend();
+	                    }
+	                    return val;
+	                },
 	                set: function set(newVal) {
-	                    notify(i, newVal);
-	                    return newVal;
+	                    dep.notify(newVal);
 	                }
 	            });
 	        };
 	
-	        for (var i in data) {
-	            _loop(i);
+	        for (var i = 0, len = keys.length; i < len; i++) {
+	            _loop(i, len);
 	        }
 	    };
 	}
@@ -198,26 +206,48 @@ return /******/ (function(modules) { // webpackBootstrap
 	
 	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 	
-	var _dom = __webpack_require__(4);
+	var _dep = __webpack_require__(4);
 	
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 	
+	var uid = 0;
+	
 	var Watcher = exports.Watcher = function () {
-	    function Watcher(val, elem, key) {
+	    function Watcher(vm, elem, key) {
 	        _classCallCheck(this, Watcher);
 	
-	        this.elem = elem;
-	        this.lastVal = val;
+	        this.id = uid++;
+	        this.originElem = elem;
 	        this.key = key;
+	        vm._watchers.push(this);
+	        _dep.Dep.target = this;
+	        this.value = vm.$data[key];
+	        _dep.Dep.target = null;
 	    }
 	
 	    _createClass(Watcher, [{
 	        key: 'update',
 	        value: function update(newVal) {
-	            var lastVal = this.lastVal;
-	            if (newVal === lastVal) return;
-	            this.lastVal = newVal;
-	            _dom.Dom.updateElemContent(this.elem, newVal);
+	            var elem = this.originElem,
+	                rule = new RegExp('\\{\\{\\s*(' + this.key + '+)\\s*}}');
+	            this.originVal = elem.textContent;
+	            var nodeValue = this.originVal.replace(rule, newVal);
+	            // 属性节点
+	            if (elem.nodeType === 2) {
+	                this.ownner = elem.ownerElement;
+	                elem.ownerElement.setAttribute(elem.name, nodeValue);
+	            }
+	            // 文本节点
+	            if (elem.nodeType === 3) {
+	                this.ownner = elem.parentNode;
+	                elem.parentNode.innerHTML = nodeValue;
+	            }
+	            this.originElem = elem;
+	        }
+	    }, {
+	        key: 'addDep',
+	        value: function addDep(dep) {
+	            dep.addSub(this);
 	        }
 	    }]);
 
@@ -228,24 +258,61 @@ return /******/ (function(modules) { // webpackBootstrap
 /* 4 */
 /***/ function(module, exports) {
 
-	'use strict';
+	"use strict";
 	
 	Object.defineProperty(exports, "__esModule", {
 	    value: true
 	});
-	var Dom = exports.Dom = {
-	    updateElemContent: function updateElemContent(elem, newVal) {
-	        // 属性节点
-	        if (elem.nodeType === 2) {
-	            var name = elem.name === 'class' ? 'className' : elem.name;
-	            elem.ownerElement[name] = newVal;
-	        }
-	        // 文本节点
-	        if (elem.nodeType === 3) {
-	            var textNode = document.createTextNode(newVal);
-	            console.dir(elem);
-	            // elem.parentNode.replaceChild(textNode, elem);
-	        }
+	
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+	
+	var uid = 0;
+	
+	var Dep = exports.Dep = function Dep() {
+	    _classCallCheck(this, Dep);
+	
+	    this.id = uid++;
+	    this.subs = [];
+	};
+	
+	Dep.target = null;
+	/**
+	 * Add a directive subscriber.
+	 *
+	 * @param {Directive} sub
+	 */
+	
+	Dep.prototype.addSub = function (sub) {
+	    this.subs.push(sub);
+	};
+	
+	/**
+	 * Remove a directive subscriber.
+	 *
+	 * @param {Directive} sub
+	 */
+	
+	Dep.prototype.removeSub = function (sub) {
+	    this.subs.$remove(sub);
+	};
+	
+	/**
+	 * Add self as a dependency to the target watcher.
+	 */
+	
+	Dep.prototype.depend = function () {
+	    Dep.target.addDep(this);
+	};
+	
+	/**
+	 * Notify all subscribers of a new value.
+	 */
+	
+	Dep.prototype.notify = function (newVal) {
+	    // stablize the subscriber list first
+	    var subs = this.subs;
+	    for (var i = 0, l = subs.length; i < l; i++) {
+	        subs[i].update(newVal);
 	    }
 	};
 
