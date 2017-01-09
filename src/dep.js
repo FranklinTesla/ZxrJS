@@ -42,6 +42,7 @@ Dep.prototype.depend = function () {
 Dep.prototype.notify = function (newVal) {
     // stablize the subscriber list first
     var subs = this.subs
+    console.log(subs)
     for (var i = 0, l = subs.length; i < l; i++) {
         subs[i].update(newVal);
     }

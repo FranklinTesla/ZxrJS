@@ -12,6 +12,6 @@ function Zxr(options) {
     // 添加响应
     this.__defineReactive();
     // 编译模板
-    this.__walker(el);
+    this.$compile(el);
 }
 export {Zxr};

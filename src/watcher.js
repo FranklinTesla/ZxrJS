@@ -1,9 +1,9 @@
 import {Dep} from './dep';
+import {Dom} from './dom';
 let uid = 0;
 export class Watcher {
-    constructor(vm, elem, key) {
+    constructor(vm, key) {
         this.id = uid++;
-        this.originElem = elem;
         this.key = key;
         vm._watchers.push(this);
         Dep.target = this;
@@ -11,21 +11,15 @@ export class Watcher {
         Dep.target = null;
     }
     update(newVal) {
-        let elem = this.originElem,
-            rule = new RegExp('\\{\\{\\s*('+this.key+'+)\\s*}}');
-        this.originVal = elem.textContent;
-        let nodeValue = this.originVal.replace(rule, newVal);
-        // 属性节点
-        if (elem.nodeType === 2) {
-            this.ownner = elem.ownerElement;
-            elem.ownerElement.setAttribute(elem.name, nodeValue);
-        }
-        // 文本节点
-        if (elem.nodeType === 3) {
-            this.ownner = elem.parentNode;
-            elem.parentNode.innerHTML = nodeValue;
-        }
-        this.originElem = elem;
+        let elem = this.elem,
+            lastValue = this.value,
+            nodeValue = elem.textContent;
+        let rule = new RegExp(lastValue, 'g');
+        this.ownner = elem.ownerElement || elem.parentNode;
+        if (!this.ownner) return;
+        this.value =
+        nodeValue = nodeValue.replace(rule, newVal);
+        this.elem = elem = Dom.updateNode(elem, nodeValue);
     }
     addDep(dep){
         dep.addSub(this);

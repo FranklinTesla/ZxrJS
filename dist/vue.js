@@ -87,7 +87,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    // 添加响应
 	    this.__defineReactive();
 	    // 编译模板
-	    this.__walker(el);
+	    this.$compile(el);
 	}
 	exports.Zxr = Zxr;
 
@@ -106,37 +106,48 @@ return /******/ (function(modules) { // webpackBootstrap
 	
 	var _dep = __webpack_require__(4);
 	
+	var _dom = __webpack_require__(5);
+	
 	function initComponent(Zxr) {
 	    function trimToken(str) {
 	        return str.replace(/\s*\{\s*\{\s*/g, '').replace(/\s*}\s*}\s*/g, '');
 	    };
 	    /**
-	     * 插值处理函数
-	     * 将字符串中的{{xx}}替换为实际的值
+	     * 编译具体节点
+	     * 将文本节点和属性节点中的{{xx}}替换为实际的值
 	     */
-	    Zxr.prototype.__insertVal = function (txt, elem) {
-	        var rule = /\{\{\s*(\w+)\s*}}/g,
-	            matchResult = txt.match(rule),
-	            data = this.$data;
-	        if (!matchResult) return txt;
+	    Zxr.prototype._compileSingleNode = function (elem) {
+	        var nodeValue = elem.textContent,
+	            rule = /\{\{\s*(\w+)\s*}}/g,
+	            matchResult = nodeValue.match(rule),
+	            data = this.$data,
+	            watchers = [];
+	
+	        if (!matchResult) return;
 	        var keys = [];
+	
 	        matchResult.forEach(function (item) {
 	            keys.push(trimToken(item));
 	        });
+	
 	        for (var i = 0, len = keys.length; i < len; i++) {
 	            var key = keys[i],
 	                _rule = new RegExp('\\{\\{\\s*(' + key + '+)\\s*}}');
 	            var result = key in data ? data[key] : '';
-	            txt = txt.replace(_rule, result);
 	            // 对所有插值语句创建watcher
-	            // let watcher = new Watcher(this, elem, key);
+	            watchers.push(new _watcher.Watcher(this, key));
+	            nodeValue = nodeValue.replace(_rule, result);
 	        }
-	        return txt;
+	        // 更新节点
+	        elem = _dom.Dom.updateNode(elem, nodeValue);
+	        watchers.forEach(function (watcher) {
+	            watcher.elem = elem;
+	        });
 	    };
 	    /**
 	     * 节点遍历处理函数
 	     */
-	    Zxr.prototype.__walker = function (el) {
+	    Zxr.prototype.$compile = function (el) {
 	        var _this = this;
 	
 	        var attrs = el.attributes,
@@ -144,18 +155,12 @@ return /******/ (function(modules) { // webpackBootstrap
 	        var parseFn = function parseFn(arrayLike) {
 	            for (var i = 0, len = arrayLike.length; i < len; i++) {
 	                var item = arrayLike[i];
-	                // 属性节点
-	                if (item.nodeType === 2) {
-	                    var name = item.name === 'class' ? 'className' : item.name;
-	                    item.ownerElement[name] = _this.__insertVal(item.value, item);
-	                }
-	                // 文本节点
-	                if (item.nodeType === 3) {
-	                    var textNode = document.createTextNode(_this.__insertVal(item.textContent, item));
-	                    item.parentNode.replaceChild(textNode, item);
-	                }
 	                // 递归处理element节点和document节点
-	                if (item.nodeType === 1 || item.nodeType === 9) _this.__walker(item);
+	                if (item.nodeType === 1 || item.nodeType === 9) {
+	                    _this.$compile(item);
+	                } else {
+	                    _this._compileSingleNode(item);
+	                }
 	            }
 	        };
 	        // 遍历属性处理属性插值
@@ -208,16 +213,17 @@ return /******/ (function(modules) { // webpackBootstrap
 	
 	var _dep = __webpack_require__(4);
 	
+	var _dom = __webpack_require__(5);
+	
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 	
 	var uid = 0;
 	
 	var Watcher = exports.Watcher = function () {
-	    function Watcher(vm, elem, key) {
+	    function Watcher(vm, key) {
 	        _classCallCheck(this, Watcher);
 	
 	        this.id = uid++;
-	        this.originElem = elem;
 	        this.key = key;
 	        vm._watchers.push(this);
 	        _dep.Dep.target = this;
@@ -228,21 +234,14 @@ return /******/ (function(modules) { // webpackBootstrap
 	    _createClass(Watcher, [{
 	        key: 'update',
 	        value: function update(newVal) {
-	            var elem = this.originElem,
-	                rule = new RegExp('\\{\\{\\s*(' + this.key + '+)\\s*}}');
-	            this.originVal = elem.textContent;
-	            var nodeValue = this.originVal.replace(rule, newVal);
-	            // 属性节点
-	            if (elem.nodeType === 2) {
-	                this.ownner = elem.ownerElement;
-	                elem.ownerElement.setAttribute(elem.name, nodeValue);
-	            }
-	            // 文本节点
-	            if (elem.nodeType === 3) {
-	                this.ownner = elem.parentNode;
-	                elem.parentNode.innerHTML = nodeValue;
-	            }
-	            this.originElem = elem;
+	            var elem = this.elem,
+	                lastValue = this.value,
+	                nodeValue = elem.textContent;
+	            var rule = new RegExp(lastValue, 'g');
+	            this.ownner = elem.ownerElement || elem.parentNode;
+	            if (!this.ownner) return;
+	            this.value = nodeValue = nodeValue.replace(rule, newVal);
+	            this.elem = elem = _dom.Dom.updateNode(elem, nodeValue);
 	        }
 	    }, {
 	        key: 'addDep',
@@ -311,8 +310,40 @@ return /******/ (function(modules) { // webpackBootstrap
 	Dep.prototype.notify = function (newVal) {
 	    // stablize the subscriber list first
 	    var subs = this.subs;
+	    console.log(subs);
 	    for (var i = 0, l = subs.length; i < l; i++) {
 	        subs[i].update(newVal);
+	    }
+	};
+
+/***/ },
+/* 5 */
+/***/ function(module, exports) {
+
+	'use strict';
+	
+	Object.defineProperty(exports, "__esModule", {
+	    value: true
+	});
+	var Dom = exports.Dom = {
+	    updateNode: function updateNode(elem, newVal) {
+	        var nodeValue = elem.textContent;
+	        if (nodeValue === newVal) {
+	            return elem;
+	        }
+	        // 属性节点
+	        if (elem.nodeType === 2) {
+	            var name = elem.name === 'class' ? 'className' : elem.name;
+	            elem.ownerElement[name] = newVal;
+	        }
+	        // 文本节点
+	        if (elem.nodeType === 3) {
+	            var textNode = document.createTextNode(newVal);
+	            elem.parentNode.replaceChild(textNode, elem);
+	            // 注意elem引用的改变
+	            elem = textNode;
+	        }
+	        return elem;
 	    }
 	};
 

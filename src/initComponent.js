@@ -1,54 +1,58 @@
 import {Watcher} from './watcher';
 import {Dep} from './dep';
+import {Dom} from './dom';
 export function initComponent(Zxr) {
     function trimToken(str) {
         return str.replace(/\s*\{\s*\{\s*/g, '')
             .replace(/\s*}\s*}\s*/g, '');
     };
     /**
-     * 插值处理函数
-     * 将字符串中的{{xx}}替换为实际的值
+     * 编译具体节点
+     * 将文本节点和属性节点中的{{xx}}替换为实际的值
      */
-    Zxr.prototype.__insertVal = function(txt, elem) {
-        let rule = /\{\{\s*(\w+)\s*}}/g,
-            matchResult = txt.match(rule),
-            data = this.$data;
-        if (!matchResult) return txt;
+    Zxr.prototype._compileSingleNode = function(elem) {
+        let nodeValue = elem.textContent,
+            rule = /\{\{\s*(\w+)\s*}}/g,
+            matchResult = nodeValue.match(rule),
+            data = this.$data,
+            watchers = [];
+
+        if (!matchResult) return;
         let keys = [];
+
         matchResult.forEach(function(item) {
             keys.push(trimToken(item));
         });
+
         for (let i = 0,len = keys.length;i < len;i++) {
             let key = keys[i],
                 rule = new RegExp('\\{\\{\\s*('+key+'+)\\s*}}');
             let result = key in data? data[key]: '';
-            txt = txt.replace(rule, result);
             // 对所有插值语句创建watcher
-            // let watcher = new Watcher(this, elem, key);
+            watchers.push(new Watcher(this, key));
+            nodeValue = nodeValue.replace(rule, result);
         }
-        return txt;
+        // 更新节点
+        elem = Dom.updateNode(elem, nodeValue);
+        watchers.forEach(function(watcher) {
+            watcher.elem = elem;
+        });
     };
     /**
      * 节点遍历处理函数
      */
-    Zxr.prototype.__walker = function(el) {
+    Zxr.prototype.$compile = function(el) {
         let attrs = el.attributes,
             childNodes = el.childNodes;
         let parseFn = (arrayLike) => {
             for(let i = 0,len = arrayLike.length;i < len;i++) {
                 let item = arrayLike[i];
-                // 属性节点
-                if (item.nodeType === 2) {
-                    let name = item.name === 'class'? 'className': item.name;
-                    item.ownerElement[name] = this.__insertVal(item.value, item);
-                }
-                // 文本节点
-                if (item.nodeType === 3) {
-                    let textNode = document.createTextNode(this.__insertVal(item.textContent, item));
-                    item.parentNode.replaceChild(textNode, item);
-                }
                 // 递归处理element节点和document节点
-                if (item.nodeType === 1 || item.nodeType === 9) this.__walker(item);
+                if (item.nodeType === 1 || item.nodeType === 9) {
+                    this.$compile(item);
+                } else {
+                    this._compileSingleNode(item);
+                }
             }
         };
         // 遍历属性处理属性插值
