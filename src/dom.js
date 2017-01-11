@@ -11,11 +11,7 @@ export let Dom = {
         }
         // 文本节点
         if (elem.nodeType === 3) {
-            let textNode = document.createTextNode(newVal);
-            elem.parentNode.replaceChild(textNode, elem);
-            // 注意elem引用的改变
-            elem = textNode;
+            elem.textContent = newVal;
         }
-        return elem;
     }
 };

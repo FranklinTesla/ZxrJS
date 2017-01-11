@@ -29,14 +29,11 @@ export function initComponent(Zxr) {
                 rule = new RegExp('\\{\\{\\s*('+key+'+)\\s*}}');
             let result = key in data? data[key]: '';
             // 对所有插值语句创建watcher
-            watchers.push(new Watcher(this, key));
+            watchers.push(new Watcher(this, elem, key));
             nodeValue = nodeValue.replace(rule, result);
         }
         // 更新节点
-        elem = Dom.updateNode(elem, nodeValue);
-        watchers.forEach(function(watcher) {
-            watcher.elem = elem;
-        });
+        Dom.updateNode(elem, nodeValue);
     };
     /**
      * 节点遍历处理函数
@@ -78,6 +75,9 @@ export function initComponent(Zxr) {
                     return val;
                 },
                 set: function(newVal) {
+                    if (newVal === val) {
+                        return;
+                    }
                     dep.notify(newVal);
                 }
             })

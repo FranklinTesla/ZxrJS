@@ -135,14 +135,11 @@ return /******/ (function(modules) { // webpackBootstrap
 	                _rule = new RegExp('\\{\\{\\s*(' + key + '+)\\s*}}');
 	            var result = key in data ? data[key] : '';
 	            // 对所有插值语句创建watcher
-	            watchers.push(new _watcher.Watcher(this, key));
+	            watchers.push(new _watcher.Watcher(this, elem, key));
 	            nodeValue = nodeValue.replace(_rule, result);
 	        }
 	        // 更新节点
-	        elem = _dom.Dom.updateNode(elem, nodeValue);
-	        watchers.forEach(function (watcher) {
-	            watcher.elem = elem;
-	        });
+	        _dom.Dom.updateNode(elem, nodeValue);
 	    };
 	    /**
 	     * 节点遍历处理函数
@@ -187,6 +184,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	                    return val;
 	                },
 	                set: function set(newVal) {
+	                    if (newVal === val) {
+	                        return;
+	                    }
 	                    dep.notify(newVal);
 	                }
 	            });
@@ -220,11 +220,13 @@ return /******/ (function(modules) { // webpackBootstrap
 	var uid = 0;
 	
 	var Watcher = exports.Watcher = function () {
-	    function Watcher(vm, key) {
+	    function Watcher(vm, elem, key) {
 	        _classCallCheck(this, Watcher);
 	
 	        this.id = uid++;
 	        this.key = key;
+	        this.vm = vm;
+	        this.elem = elem;
 	        vm._watchers.push(this);
 	        _dep.Dep.target = this;
 	        this.value = vm.$data[key];
@@ -234,14 +236,20 @@ return /******/ (function(modules) { // webpackBootstrap
 	    _createClass(Watcher, [{
 	        key: 'update',
 	        value: function update(newVal) {
+	            var lastValue = this.value;
+	            if (newVal === lastValue) {
+	                return;
+	            }
+	            var rule = new RegExp(lastValue);
+	            // 处理文本节点
 	            var elem = this.elem,
-	                lastValue = this.value,
 	                nodeValue = elem.textContent;
-	            var rule = new RegExp(lastValue, 'g');
-	            this.ownner = elem.ownerElement || elem.parentNode;
-	            if (!this.ownner) return;
-	            this.value = nodeValue = nodeValue.replace(rule, newVal);
-	            this.elem = elem = _dom.Dom.updateNode(elem, nodeValue);
+	            // if (node.nodeType !== 3) {
+	            //     return;
+	            // }
+	            this.value = newVal;
+	            nodeValue = nodeValue.replace(rule, newVal);
+	            _dom.Dom.updateNode(elem, nodeValue);
 	        }
 	    }, {
 	        key: 'addDep',
@@ -310,7 +318,6 @@ return /******/ (function(modules) { // webpackBootstrap
 	Dep.prototype.notify = function (newVal) {
 	    // stablize the subscriber list first
 	    var subs = this.subs;
-	    console.log(subs);
 	    for (var i = 0, l = subs.length; i < l; i++) {
 	        subs[i].update(newVal);
 	    }
@@ -338,12 +345,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	        }
 	        // 文本节点
 	        if (elem.nodeType === 3) {
-	            var textNode = document.createTextNode(newVal);
-	            elem.parentNode.replaceChild(textNode, elem);
-	            // 注意elem引用的改变
-	            elem = textNode;
+	            elem.textContent = newVal;
 	        }
-	        return elem;
 	    }
 	};
 
