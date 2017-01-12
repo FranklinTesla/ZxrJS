@@ -11,8 +11,8 @@ export function initComponent(Zxr) {
      * 将文本节点和属性节点中的{{xx}}替换为实际的值
      */
     Zxr.prototype._compileSingleNode = function(elem) {
-        let nodeValue = elem.textContent,
-            rule = /\{\{\s*(\w+)\s*}}/g,
+        let nodeValue = elem.textContent || elem.value,
+            rule = /\{\s*\{\s*(\w+)\s*}\s*}/g,
             matchResult = nodeValue.match(rule),
             data = this.$data,
             watchers = [];
@@ -26,7 +26,7 @@ export function initComponent(Zxr) {
 
         for (let i = 0,len = keys.length;i < len;i++) {
             let key = keys[i],
-                rule = new RegExp('\\{\\{\\s*('+key+'+)\\s*}}');
+                rule = new RegExp('\\{\\s*\\{\\s*('+key+'+)\\s*}\\s*}');
             let result = key in data? data[key]: '';
             // 对所有插值语句创建watcher
             watchers.push(new Watcher(this, elem, key));

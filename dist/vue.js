@@ -117,8 +117,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	     * 将文本节点和属性节点中的{{xx}}替换为实际的值
 	     */
 	    Zxr.prototype._compileSingleNode = function (elem) {
-	        var nodeValue = elem.textContent,
-	            rule = /\{\{\s*(\w+)\s*}}/g,
+	        var nodeValue = elem.textContent || elem.value,
+	            rule = /\{\s*\{\s*(\w+)\s*}\s*}/g,
 	            matchResult = nodeValue.match(rule),
 	            data = this.$data,
 	            watchers = [];
@@ -132,7 +132,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	
 	        for (var i = 0, len = keys.length; i < len; i++) {
 	            var key = keys[i],
-	                _rule = new RegExp('\\{\\{\\s*(' + key + '+)\\s*}}');
+	                _rule = new RegExp('\\{\\s*\\{\\s*(' + key + '+)\\s*}\\s*}');
 	            var result = key in data ? data[key] : '';
 	            // 对所有插值语句创建watcher
 	            watchers.push(new _watcher.Watcher(this, elem, key));
@@ -240,15 +240,11 @@ return /******/ (function(modules) { // webpackBootstrap
 	            if (newVal === lastValue) {
 	                return;
 	            }
-	            var rule = new RegExp(lastValue);
 	            // 处理文本节点
 	            var elem = this.elem,
 	                nodeValue = elem.textContent;
-	            // if (node.nodeType !== 3) {
-	            //     return;
-	            // }
 	            this.value = newVal;
-	            nodeValue = nodeValue.replace(rule, newVal);
+	            nodeValue = nodeValue.replace(lastValue, newVal);
 	            _dom.Dom.updateNode(elem, nodeValue);
 	        }
 	    }, {

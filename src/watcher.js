@@ -17,15 +17,11 @@ export class Watcher {
         if (newVal === lastValue) {
             return;
         }
-        let rule = new RegExp(lastValue);
         // 处理文本节点
         let elem = this.elem,
             nodeValue = elem.textContent;
-        // if (node.nodeType !== 3) {
-        //     return;
-        // }
         this.value = newVal;
-        nodeValue = nodeValue.replace(rule, newVal);
+        nodeValue = nodeValue.replace(lastValue, newVal);
         Dom.updateNode(elem, nodeValue);
     }
     addDep(dep){

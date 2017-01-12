@@ -6,14 +6,14 @@
 </head>
 <body>
 <div id="app" class="{{hehe}}sdfsdgdfg">
-    {{ message }}
+    {    { message }             }
     {{ hehe }}
     {{ hehe }}
     {{ hehe }}
     {{ hehe }}
     {{ message }}
     <div class="cao">
-        {{message}}
+        {{message}}{{laozijiubuxingle}}
     </div>
 </div>
 <script src="./dist/vue.js"></script>
@@ -22,12 +22,14 @@
         el: '#app',
         data: {
             message: 'Hello Vue.js!',
-            hehe: 'hehe'
+            hehe: 'hehe',
+            laozijiubuxingle: 'laozijiubuxingle'
         }
     });
     app.$data.message = 'rinima';
     app.$data.message = 'nimei';
     app.$data.hehe = 'sdfgdfgdf';
+    app.$data.laozijiubuxingle = 'sdfgsd';
 </script>
 </body>
 </html>
