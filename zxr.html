@@ -5,15 +5,12 @@
     <title>Title</title>
 </head>
 <body>
-<div id="app" class="{{hehe}}sdfsdgdfg">
-    {    { message }             }
-    {{ hehe }}
-    {{ hehe }}
-    {{ hehe }}
-    {{ hehe }}
-    {{ message }}
+<div id="app" class="sdfsdgdfg">
+    {    { message.dep.level }             }
+    {{ message.dep.level }}
+    {{cao}}
     <div class="cao">
-        {{message}}{{laozijiubuxingle}}
+        {{message.dep.level}}
     </div>
 </div>
 <script src="./dist/vue.js"></script>
@@ -21,15 +18,16 @@
     var app = new Vue({
         el: '#app',
         data: {
-            message: 'Hello Vue.js!',
-            hehe: 'hehe',
-            laozijiubuxingle: 'laozijiubuxingle'
+            message: {
+                dep: {
+                    level: 'sdfsdfdgfd'
+                }
+            },
+            cao: 'cao'
         }
     });
-    app.$data.message = 'rinima';
-    app.$data.message = 'nimei';
-    app.$data.hehe = 'sdfgdfgdf';
-    app.$data.laozijiubuxingle = 'sdfgsd';
+    app.$data.message.dep.level = 'ddddd';
+    app.$data.cao = 'new cao';
 </script>
 </body>
 </html>

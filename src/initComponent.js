@@ -1,6 +1,9 @@
 import {Watcher} from './watcher';
 import {Dep} from './dep';
 import {Dom} from './dom';
+import objToString from './var/toString';
+import regEscape from './var/regEscape';
+import getExpVal from './expression';
 export function initComponent(Zxr) {
     function trimToken(str) {
         return str.replace(/\s*\{\s*\{\s*/g, '')
@@ -12,7 +15,7 @@ export function initComponent(Zxr) {
      */
     Zxr.prototype._compileSingleNode = function(elem) {
         let nodeValue = elem.textContent || elem.value,
-            rule = /\{\s*\{\s*(\w+)\s*}\s*}/g,
+            rule = /\{\s*\{\s*([\w.]+)\s*}\s*}/g,
             matchResult = nodeValue.match(rule),
             data = this.$data,
             watchers = [];
@@ -25,11 +28,11 @@ export function initComponent(Zxr) {
         });
 
         for (let i = 0,len = keys.length;i < len;i++) {
-            let key = keys[i],
-                rule = new RegExp('\\{\\s*\\{\\s*('+key+'+)\\s*}\\s*}');
-            let result = key in data? data[key]: '';
+            let exp = keys[i],
+                rule = new RegExp('\\{\\s*\\{\\s*('+regEscape(exp)+'+)\\s*}\\s*}'),
+                result = getExpVal(data, exp);
             // 对所有插值语句创建watcher
-            watchers.push(new Watcher(this, elem, key));
+            watchers.push(new Watcher(this, elem, exp));
             nodeValue = nodeValue.replace(rule, result);
         }
         // 更新节点
@@ -62,25 +65,31 @@ export function initComponent(Zxr) {
      */
     Zxr.prototype.__defineReactive = function() {
         let data = this.$data;
-        let keys = Object.keys(data);
-        for (let i = 0,len = keys.length;i < len;i++) {
-            let key = keys[i],
-                dep = new Dep(),
-                val = data[key];
-            Object.defineProperty(data, key ,{
-                get: function() {
-                    if (Dep.target) {
-                        dep.depend();
+        let defineSingleReactive = function(obj) {
+            let keys = Object.keys(obj);
+            for (let i = 0,len = keys.length;i < len;i++) {
+                let key = keys[i],
+                    val = obj[key],
+                    dep = new Dep();
+                Object.defineProperty(obj, key ,{
+                    get: function() {
+                        if (Dep.target) {
+                            dep.depend();
+                        }
+                        return val;
+                    },
+                    set: function(newVal) {
+                        if (newVal === val) {
+                            return;
+                        }
+                        dep.notify(newVal);
                     }
-                    return val;
-                },
-                set: function(newVal) {
-                    if (newVal === val) {
-                        return;
-                    }
-                    dep.notify(newVal);
+                });
+                if (objToString(val) === '[object Object]') {
+                    defineSingleReactive(val);
                 }
-            })
-        }
+            }
+        };
+        defineSingleReactive(data);
     }
 }
