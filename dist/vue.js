@@ -100,6 +100,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	Object.defineProperty(exports, "__esModule", {
 	    value: true
 	});
+	
+	var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
+	
 	exports.initComponent = initComponent;
 	
 	var _watcher = __webpack_require__(3);
@@ -189,8 +192,14 @@ return /******/ (function(modules) { // webpackBootstrap
 	
 	            var _loop = function _loop(i, len) {
 	                var key = keys[i],
-	                    val = obj[key],
-	                    dep = new _dep.Dep();
+	                    val = obj[key];
+	                if ((0, _toString2.default)(val) === '[object Object]') {
+	                    defineSingleReactive(val);
+	                    return {
+	                        v: void 0
+	                    };
+	                }
+	                var dep = new _dep.Dep();
 	                Object.defineProperty(obj, key, {
 	                    get: function get() {
 	                        if (_dep.Dep.target) {
@@ -205,13 +214,12 @@ return /******/ (function(modules) { // webpackBootstrap
 	                        dep.notify(newVal);
 	                    }
 	                });
-	                if ((0, _toString2.default)(val) === '[object Object]') {
-	                    defineSingleReactive(val);
-	                }
 	            };
 	
 	            for (var i = 0, len = keys.length; i < len; i++) {
-	                _loop(i, len);
+	                var _ret = _loop(i, len);
+	
+	                if ((typeof _ret === 'undefined' ? 'undefined' : _typeof(_ret)) === "object") return _ret.v;
 	            }
 	        };
 	        defineSingleReactive(data);
@@ -349,7 +357,7 @@ return /******/ (function(modules) { // webpackBootstrap
 /* 5 */
 /***/ function(module, exports) {
 
-	'use strict';
+	"use strict";
 	
 	Object.defineProperty(exports, "__esModule", {
 	    value: true
@@ -362,8 +370,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	        }
 	        // 属性节点
 	        if (elem.nodeType === 2) {
-	            var name = elem.name === 'class' ? 'className' : elem.name;
-	            elem.ownerElement[name] = newVal;
+	            elem.value = newVal;
 	        }
 	        // 文本节点
 	        if (elem.nodeType === 3) {

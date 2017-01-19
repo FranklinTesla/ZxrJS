@@ -69,8 +69,12 @@ export function initComponent(Zxr) {
             let keys = Object.keys(obj);
             for (let i = 0,len = keys.length;i < len;i++) {
                 let key = keys[i],
-                    val = obj[key],
-                    dep = new Dep();
+                    val = obj[key];
+                if (objToString(val) === '[object Object]') {
+                    defineSingleReactive(val);
+                    return;
+                }
+                let dep = new Dep();
                 Object.defineProperty(obj, key ,{
                     get: function() {
                         if (Dep.target) {
@@ -85,9 +89,6 @@ export function initComponent(Zxr) {
                         dep.notify(newVal);
                     }
                 });
-                if (objToString(val) === '[object Object]') {
-                    defineSingleReactive(val);
-                }
             }
         };
         defineSingleReactive(data);

@@ -6,7 +6,7 @@
 </head>
 <body>
 <div id="app" class="sdfsdgdfg">
-    {    { message.dep.level }             }
+    <input type="text" value="{{message.dep.level}}" class="{{message.dep.level}}">
     {{ message.dep.level }}
     {{cao}}
     <div class="cao">
@@ -28,6 +28,10 @@
     });
     app.$data.message.dep.level = 'ddddd';
     app.$data.cao = 'new cao';
+    var inputElem = document.querySelector('#app input');
+    inputElem.addEventListener('input', function(ev) {
+        app.$data.message.dep.level = ev.target.value;
+    });
 </script>
 </body>
 </html>
